@@ -767,37 +767,39 @@ static int mtk_warpa_fe_buffer_sync_for_cpu(struct mtk_warpa_fe *warpa_fe, u32 o
 
 	for (i = 0; i < warpa_fe->img_num; i++) {
 		buf_type = MTK_WARPA_FE_GET_BUF_NUM(MTK_WARPA_FE_BUF_TYPE_FE_POINT_MIN, out_buf_cnt, i);
-		if (!warpa_fe->buf[buf_type]->is_sysram) {
+		if (warpa_fe->buf[buf_type] && !warpa_fe->buf[buf_type]->is_sysram) {
 			dma_sync_sg_for_cpu(warpa_fe->dev_fe,
 					    warpa_fe->buf[buf_type]->sg->sgl, warpa_fe->buf[buf_type]->sg->nents, DMA_BIDIRECTIONAL);
 		}
 		buf_type = MTK_WARPA_FE_GET_BUF_NUM(MTK_WARPA_FE_BUF_TYPE_FE_DESC_MIN, out_buf_cnt, i);
-		if (!warpa_fe->buf[buf_type]->is_sysram) {
+		if (warpa_fe->buf[buf_type] && !warpa_fe->buf[buf_type]->is_sysram) {
 			dma_sync_sg_for_cpu(warpa_fe->dev_fe,
 					    warpa_fe->buf[buf_type]->sg->sgl, warpa_fe->buf[buf_type]->sg->nents, DMA_BIDIRECTIONAL);
 		}
 	}
 
 	buf_type = MTK_WARPA_FE_BUF_TYPE_WDMA_MIN + out_buf_cnt;
-	if (!warpa_fe->buf[buf_type]->is_sysram) {
+	if (warpa_fe->buf[buf_type] && !warpa_fe->buf[buf_type]->is_sysram) {
 		dma_sync_sg_for_cpu(warpa_fe->dev_wdma0,
 				    warpa_fe->buf[buf_type]->sg->sgl, warpa_fe->buf[buf_type]->sg->nents, DMA_BIDIRECTIONAL);
 	}
 
 	if (warpa_fe->warpafemask & WARPA_FE_CONNECT_TO_P_SCALE) {
 		buf_type = MTK_WARPA_FE_BUF_TYPE_WDMA_1_MIN + out_buf_cnt;
-		if (!warpa_fe->buf[buf_type]->is_sysram) {
+		if (warpa_fe->buf[buf_type] && !warpa_fe->buf[buf_type]->is_sysram) {
 			dma_sync_sg_for_cpu(warpa_fe->dev_wdma1,
 					    warpa_fe->buf[buf_type]->sg->sgl, warpa_fe->buf[buf_type]->sg->nents, DMA_BIDIRECTIONAL);
 		}
 		buf_type = MTK_WARPA_FE_BUF_TYPE_WDMA_2_MIN + out_buf_cnt;
-		if (!warpa_fe->buf[buf_type]->is_sysram) {
+		if (warpa_fe->buf[buf_type] && !warpa_fe->buf[buf_type]->is_sysram) {
 			dma_sync_sg_for_cpu(warpa_fe->dev_wdma2,
 					    warpa_fe->buf[buf_type]->sg->sgl, warpa_fe->buf[buf_type]->sg->nents, DMA_BIDIRECTIONAL);
 		}
 	}
 	return 0;
 }
+
+#define VTS_INTERVAL_120FPS (1000*1000/120) //8333us(@120fps)
 
 static int mtk_warpa_fe_trigger_thread(void *arg)
 {
@@ -806,10 +808,11 @@ static int mtk_warpa_fe_trigger_thread(void *arg)
 	u32 fe_wdma_done_event = warpa_fe->cmdq_events[MTK_WARPA_FE_CMDQ_EVENT_FRAME_DONE_WDMA];
 	u32 fe_wdma_2_done_event = warpa_fe->cmdq_events[MTK_WARPA_FE_CMDQ_EVENT_FRAME_DONE_WDMA_2];
 	u32 wait_before_start_event = warpa_fe->cmdq_events[MTK_WARPA_FE_CMDQ_EVENT_ISP_P2_DONE];
-	u32 vts;
+	u32 pre_vts, latest_vts, vts;
 	u32 dp_counter;
 	int retry;
 	u64 start_time;
+	u64 stc;
 	int ret = 0;
 
 	pr_info("%s start.\n", __func__);
@@ -852,6 +855,7 @@ static int mtk_warpa_fe_trigger_thread(void *arg)
 
 		start_time = ktime_get_ns();
 		do {
+			mtk_ts_get_side_0_a_p2_vision_time(warpa_fe->dev_ts, &pre_vts, &dp_counter);
 			cmdq_pkt_multiple_reset(&warpa_fe->cmdq_pkt, 1);
 			if (warpa_fe->warpafemask & WARPA_FE_KICK_AFTER_P2_DONE) {
 				cmdq_pkt_wfe(warpa_fe->cmdq_pkt, wait_before_start_event);
@@ -899,8 +903,15 @@ static int mtk_warpa_fe_trigger_thread(void *arg)
 				mtk_warpa_get_wpe_done(warpa_fe->dev_warpa));
 		} while (retry > 0);
 
-		mtk_ts_get_side_0_a_p2_vision_time(warpa_fe->dev_ts, &vts, &dp_counter);
-		warpa_fe->latest_vts = vts;
+		mtk_ts_get_side_0_a_p2_vision_time(warpa_fe->dev_ts, &latest_vts, &dp_counter);
+		/* WA for Issue #1738 */
+		mtk_ts_get_current_time(warpa_fe->dev_ts ,&vts, &stc, &dp_counter);
+		//pr_info("latest:%d now:%d df:%d kt_df:%lld\n", latest_vts, vts, vts-latest_vts, (ktime_get_ns() - start_time) / (1000));
+		if (vts - latest_vts < VTS_INTERVAL_120FPS / 4) {
+			//pr_info("pre:%d now:%d df:%d\n", pre_vts, vts, vts-pre_vts);
+			latest_vts = pre_vts;
+		}
+		warpa_fe->latest_vts = latest_vts;
 
 		smp_mb(); /* wmb for latest_vts */ /* rmb for trigger_wait_flag */
 
@@ -1263,9 +1274,8 @@ static int mtk_warpa_fe_ioctl_trigger(struct mtk_warpa_fe *warpa_fe, unsigned lo
 			trigger.err_status = MTK_WARPA_FE_NEED_TO_RESTART;
 		} else {
 			trigger.err_status = MTK_WARPA_FE_NO_ERR;
+			mtk_warpa_fe_buffer_sync_for_cpu(warpa_fe, buf_index);
 		}
-
-		mtk_warpa_fe_buffer_sync_for_cpu(warpa_fe, buf_index);
 
 		smp_rmb(); /* for latest_vts */
 		trigger.vts = warpa_fe->latest_vts;

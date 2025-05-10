@@ -2222,8 +2222,14 @@ int mt_afe_capture_start(struct device *dev, int dai_id)
 	}
 
 	afe_data.trigger_start_cnt[dai_id]++;
-	if (afe_data.trigger_start_cnt[dai_id] != 1) {
-		dev_dbg(afe->dev, "%s: dai_id=%d has already triggered.\n", __func__, dai_id);
+	if (afe_data.trigger_start_cnt[dai_id] > 2) {
+		dev_info(afe->dev, "%s: dai_id=%d has already triggered.\n", __func__, dai_id);
+		return 0;
+	}
+	if (afe_data.trigger_start_cnt[dai_id] == 2) {
+		dev_info(afe->dev, "%s: dai_id=%d trigger with IRQ\n", __func__, dai_id);
+		mt_afe_dais_trigger(afe, dai_id, SNDRV_PCM_TRIGGER_STOP_NOIRQ);
+		mt_afe_dais_trigger(afe, dai_id, SNDRV_PCM_TRIGGER_START);
 		return 0;
 	}
 	mt_afe_i2s_trigger(afe, dai_id, true);
@@ -2250,8 +2256,12 @@ int mt_afe_capture_stop(struct device *dev, int dai_id)
 
 	afe_data.trigger_start_cnt[dai_id]--;
 	if (afe_data.trigger_start_cnt[dai_id] > 0) {
-		dev_dbg(afe->dev, "%s:SNDRV_PCM_TRIGGER_STOP: dai_id=%d keep trigger start. cnt:%d.\n",
+		dev_info(afe->dev, "%s:SNDRV_PCM_TRIGGER_STOP: dai_id=%d keep trigger start. cnt:%d.\n",
 			__func__, dai_id, afe_data.trigger_start_cnt[dai_id]);
+		if (afe_data.trigger_start_cnt[dai_id] == 1) {
+			mt_afe_dais_trigger(afe, dai_id, SNDRV_PCM_TRIGGER_STOP);
+			mt_afe_dais_trigger(afe, dai_id, SNDRV_PCM_TRIGGER_START_NOIRQ);
+		}
 		return 0;
 	}
 	afe_data.trigger_start_cnt[dai_id] = 0;
