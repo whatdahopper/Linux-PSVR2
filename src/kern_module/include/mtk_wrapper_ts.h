@@ -78,4 +78,8 @@ typedef struct _ts_stc_set {
 #define TS_GET_IMU0_TIME                  _IOR(TS_DEVICE_IOC_TYPE, 24, ts_imu_info)
 #define TS_GET_IMU1_TIME                  _IOR(TS_DEVICE_IOC_TYPE, 25, ts_imu_info)
 
+#ifdef __KERNEL__
+long mtk_wrapper_api_ts_get_current_time(__u32* vts, __u64* stc, __u32* dp_counter);
+#endif
+
 #endif /* _MTK_WRAPPER_TS_*/

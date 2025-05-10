@@ -33,7 +33,7 @@ endif
 ccflags-y            += -I$(PWD)/../include
 CFLAGS_MODULE        += -Werror
 MAKE_ARG             := ARCH=arm64 O=$(LINUX_PATH) CROSS_COMPILE="$(CCACHE) $(ARM64_COMPILE_PREFIX)"
-EXTRA_SYMBOLS        := $(OUT)/../sieaudio/Module.symvers $(OUT)/../sieimu/Module.symvers
+EXTRA_SYMBOLS        := $(OUT)/../sieaudio/Module.symvers $(OUT)/../sieimu/Module.symvers $(OUT)/../mtk_wrapper/Module.symvers
 
 all: $(INSTALL_NFS) $(OUT)/$(TARGET).ko.strip
 

@@ -22,10 +22,6 @@ CONFIG_MACH_MT3612  := y
 CFLAGS_MODULE       += -DCONFIG_MACH_MT3612
 endif
 
-ifeq ($(SUPPORT_HDR), true)
-CFLAGS_MODULE       += -DSUPPORT_HDR
-endif
-
 obj-m                := mtk_wrapper.o
 $(TARGET)-y          := mtk_wrapper_main.o
 $(TARGET)-y          += mtk_wrapper_dprx.o
@@ -68,6 +64,10 @@ endif
 ifeq ($(SIE_GAZE_DEBUG_BUILD), 1)
   CFLAGS_MODULE += -DCONFIG_MTK_WRAPPER_GAZE_DEBUG
 endif
+ifeq ($(SIE_BETA_BUILD), 1)
+  CFLAGS_MODULE += -DCONFIG_MTK_WRAPPER_DISABLE_4K_DSC
+endif
+
 
 all: $(INSTALL_NFS) $(OUT)/$(TARGET).ko.strip
 

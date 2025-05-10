@@ -143,14 +143,7 @@ static void dprx_dpcd_setting(void)
 	int i;
 
 	static const struct dpcd_setting_table dpcd[] = {
-#if defined(CONFIG_MTK_WRAPPER_FACTORY) || defined(CONFIG_MTK_WRAPPER_GAZE_DEBUG) || defined(CONFIG_MTK_WRAPPER_DEBUG)
-		{ 0x61, 0x11 },	   /* DSC Version 1.1 */
-		{ 0x62, 0x00 },	   /* RC Buffer Block Size */
-		{ 0x64, 0x08 },	   /* DSC SLICE CAPABILITIES 1 */
-		{ 0x69, 0x01 },	   /* DSC DECODER COLOR FORMAT CAPABILITIES */
-		{ 0x6B, 0x01 },	   /* Peak DSC Throughput */
-		{ 0x6C, 0x08 },	   /* DSC Maximum Slice Width */
-#else
+#if defined(CONFIG_MTK_WRAPPER_DISABLE_4K_DSC)
 		{ 0x60, 0x00 },	   /* DSC Version 1.1 */
 		{ 0x61, 0x00 },	   /* DSC Version 1.1 */
 		{ 0x62, 0x00 },	   /* RC Buffer Block Size */
@@ -162,6 +155,13 @@ static void dprx_dpcd_setting(void)
 		{ 0x6B, 0x00 },	   /* Peak DSC Throughput */
 		{ 0x6C, 0x00 },	   /* DSC Maximum Slice Width */
 		{ 0x90, 0x00 },	   /* FEC */
+#else
+		{ 0x61, 0x11 },	   /* DSC Version 1.1 */
+		{ 0x62, 0x00 },	   /* RC Buffer Block Size */
+		{ 0x64, 0x08 },	   /* DSC SLICE CAPABILITIES 1 */
+		{ 0x69, 0x01 },	   /* DSC DECODER COLOR FORMAT CAPABILITIES */
+		{ 0x6B, 0x01 },	   /* Peak DSC Throughput */
+		{ 0x6C, 0x08 },	   /* DSC Maximum Slice Width */
 #endif
 	};
 	for (i = 0; i < ARRAY_SIZE(dpcd); i++) {
@@ -260,6 +260,9 @@ static int dprx_get_video_info(void *arg)
 	vinfo.nvid = info.nvid;
 
 	vinfo.dsc_enable = (dprx_get_dsc_mode_status() == 0) ? false : true;
+	vinfo.vbid       = dprx_get_vbid();
+	vinfo.video_stable = dprx_get_video_stable_status();
+
 
 	ret = copy_to_user(arg, &vinfo, sizeof(dprx_video_info));
 	if (ret != 0) {
@@ -528,6 +531,26 @@ static int dprx_release_fifo(void)
 	return 0;
 }
 
+static int dprx_get_source_ieee_oui(void *user)
+{
+	int ret;
+	int i;
+	__u32 oui = 0;
+	const __u32 offset = 0x300; /* source IEEE_OUI 0x300-0x302 */
+
+	for (i = 0; i < 3; i++) {
+		oui = oui << 8;
+		oui |= dprx_get_dpcd_value(offset+i);
+	}
+
+	ret = copy_to_user(user, &oui, sizeof(oui));
+	if (ret != 0) {
+		return -EFAULT;
+	}
+
+	return 0;
+}
+
 static int mtk_wrapper_dprx_open(struct inode *inode, struct file *file)
 {
 	return 0;
@@ -625,6 +648,9 @@ static long mtk_wrapper_dprx_ioctl(struct file *file, unsigned int cmd, unsigned
 		break;
 	case DPRX_RELEASE_FIFO:
 		ret = dprx_release_fifo();
+		break;
+	case DPRX_GET_SOURCE_IEEE_OUI:
+		ret = dprx_get_source_ieee_oui((void *)arg);
 		break;
 	default:
 		dev_err(s_dprx, "dprx_ioctl: unknown command(%d)\n", cmd);

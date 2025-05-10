@@ -370,47 +370,58 @@ static int mtk_wrapper_mmsyscfg_camera_sync_enable(MTK_WRAPPER_MMSYSCFG_CAMERA_I
 	return ret;
 }
 
+// #define USE_CMDQ_FOR_CAMERA_SYNC_DISABLE
 static int mtk_wrapper_mmsyscfg_camera_sync_disable(MTK_WRAPPER_MMSYSCFG_CAMERA_ID id)
 {
 	int ret;
+	struct cmdq_pkt **p_pkt;
 	u32 event;
 	struct cmdq_pkt *pkt;
+	event = CMDQ_EVENT_MMSYS_CORE_DSI0_SOF_EVENT;
 
 	pr_debug("mmsyscfg_camera_sync_disable(%d)\n", id);
-
-	event = CMDQ_EVENT_MMSYS_CORE_DSI0_SOF_EVENT;
 
 	if (id >= MTK_WRAPPER_MMSYSCFG_CAMERA_MAX) {
 		return -EINVAL;
 	}
 
+
+#if defined(USE_CMDQ_FOR_CAMERA_SYNC_DISABLE)
 	cmdq_pkt_create(&pkt);
 	cmdq_pkt_clear_event(pkt, event);
 	cmdq_pkt_wfe(pkt, event);
+	p_pkt = &pkt;
+#else
+	pkt   = NULL;
+	p_pkt = NULL;
+#endif
 
 	if (id == MTK_WRAPPER_MMSYSCFG_CAMERA_SIDE) {
 		ret = mtk_mmsys_cfg_camera_sync_disable(s_mmsyscfg_dev,
 							MMSYSCFG_CAMERA_SYNC_SIDE01,
-							&pkt);
+							p_pkt);
 		ret |= mtk_mmsys_cfg_camera_sync_disable(s_mmsyscfg_dev,
 							 MMSYSCFG_CAMERA_SYNC_SIDE23,
-							 &pkt);
+							 p_pkt);
 	} else if (id == MTK_WRAPPER_MMSYSCFG_CAMERA_GAZE) {
 		ret = mtk_mmsys_cfg_camera_sync_disable(s_mmsyscfg_dev,
 							MMSYSCFG_CAMERA_SYNC_GAZE0,
-							&pkt);
+							p_pkt);
 
 		ret |= mtk_mmsys_cfg_camera_sync_disable(s_mmsyscfg_dev,
 							 MMSYSCFG_CAMERA_SYNC_GAZE1,
-							 &pkt);
+							 p_pkt);
 	} else {
 		/* id == MTK_WRAPPER_MMSYSCFG_CAMERA_GAZE_LED */
 		ret = mtk_mmsys_cfg_camera_sync_disable(s_mmsyscfg_dev,
 							MMSYSCFG_CAMERA_SYNC_GAZE_LED,
-							&pkt);
+							p_pkt);
 	}
+
+#ifdef USE_CMDQ_FOR_CAMERA_SYNC_DISABLE
 	cmdq_pkt_flush(s_cmdq_client[id], pkt);
 	cmdq_pkt_destroy(pkt);
+#endif
 
 	return ret;
 }

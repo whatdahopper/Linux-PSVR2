@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (C) 2020 Sony Interactive Entertainment Inc.
+ * Copyright (C) 2023 Sony Interactive Entertainment Inc.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,10 +21,13 @@
 #include <linux/poll.h>
 #include <linux/sched.h>
 #include <linux/wait.h>
+#include <linux/module.h>
 
 #include "sce_km_defs.h"
 #include "usb.h"
 #include "command.h"
+
+#include <mtk_wrapper_ts.h>
 
 //#define CMD_DEBUG_LOG_ENABLE
 
@@ -68,6 +71,9 @@ static wait_queue_head_t s_ctrlcmd_wait_queue;
 static unsigned long atomic_flags;
 #define FLAG_OPENED (0)
 
+static uint ts;
+module_param(ts, uint, S_IRUGO);
+
 //----------------------------------------------------------------------------
 
 
@@ -96,6 +102,20 @@ static void usb_cmd_ctrl_complete(struct usb_ep *ep, struct usb_request *req)
 	return;
 }
 
+struct report_current_ts
+{
+	__u8 report_id;
+	__u8 reserved0[1];
+	__u16 command;
+	__u16 payloadLength;
+	__u8 reserved1[2];
+	__u32 status;
+	__u32 vts;
+	__u32 dp_counter;
+	__u32 reserved;
+	__u64 stc;
+};
+
 static int usb_cmd_get_report(struct usb_configuration *config, const struct usb_ctrlrequest *ctrl)
 {
 	struct usb_composite_dev *cdev = config->cdev;
@@ -104,8 +124,22 @@ static int usb_cmd_get_report(struct usb_configuration *config, const struct usb
 	uint16_t length = __le16_to_cpu(ctrl->wLength);
 	uint8_t report_id = (uint8_t)(value & 0x00FF);
 	unsigned long flags;
+	struct report_current_ts cur_ts;
 
 	GADGET_CMD_LOG(LOG_INFO, "get_report R-ID: %02X\n", report_id);
+
+	if (report_id == 0xDE/*get_cur_ts*/) {
+		cur_ts.report_id = report_id;
+		cur_ts.reserved0[0] = 0;
+		cur_ts.command = 1;
+		cur_ts.payloadLength = sizeof(struct report_current_ts) - 8/*header*/;
+		cur_ts.reserved1[0] = 0;
+		cur_ts.status = mtk_wrapper_api_ts_get_current_time(&cur_ts.vts, &cur_ts.stc, &cur_ts.dp_counter);
+		cur_ts.reserved = 0;
+		req->length = sizeof(struct report_current_ts);
+		memcpy(req->buf, &cur_ts, req->length);
+		return 0;
+	}
 
 	spin_lock_irqsave(&s_ctrlcmd_report_list_lock, flags);
 
@@ -168,6 +202,8 @@ int usb_cmd_setup(struct usb_configuration *config, const struct usb_ctrlrequest
 			}
 		}
 	}
+
+	ts = (uint)ktime_get_seconds();
 
 	return status;
 }

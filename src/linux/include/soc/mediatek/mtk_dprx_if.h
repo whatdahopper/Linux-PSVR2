@@ -67,5 +67,6 @@ int dprx_hdcp2x_disable(void);
 int dprx_set_hdcp1x_capability(bool enable);
 void dprx_if_fifo_reset(void);
 void dprx_if_fifo_release(void);
+int dprx_get_vbid(void);
 
 #endif

@@ -76,6 +76,8 @@ typedef struct _dprx_video_info {
 	unsigned int link_speed;
 	unsigned int mvid;
 	unsigned int nvid;
+	unsigned int video_stable;
+	unsigned int vbid;
 } dprx_video_info;
 
 #define MTK_WRAPPER_DPRX_PPS_SIZE (128)
@@ -180,5 +182,6 @@ typedef struct _dprx_spd_info {
 #define DPRX_GET_SPD_INFO _IO(DPRX_DEVICE_IOC_TYPE, 12)
 #define DPRX_RESET_FIFO _IO(DPRX_DEVICE_IOC_TYPE, 13)
 #define DPRX_RELEASE_FIFO _IO(DPRX_DEVICE_IOC_TYPE, 14)
+#define DPRX_GET_SOURCE_IEEE_OUI _IOR(DPRX_DEVICE_IOC_TYPE, 15, __u32)
 
 #endif /* _MTK_WRAPPER_DPRX_ */

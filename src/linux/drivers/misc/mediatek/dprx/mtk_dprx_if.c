@@ -972,6 +972,7 @@ int dprx_get_dpcd_value(u32 dpcd_offset)
 	if ((dpcd_offset <= 0x90)  ||
 	    ((dpcd_offset >= 0x100) && (dpcd_offset <= 0x1c2))  ||
 	    ((dpcd_offset >= 0x200) && (dpcd_offset <= 0x282))  ||
+	    ((dpcd_offset >= 0x300) && (dpcd_offset <= 0x30b))  ||
 	    ((dpcd_offset >= 0x400) && (dpcd_offset <= 0x40b))  ||
 	    (dpcd_offset == 0x600)  ||
 	    ((dpcd_offset >= 0x2200) && (dpcd_offset <= 0x2213))) {
@@ -1528,3 +1529,8 @@ void dprx_if_fifo_release(void)
 }
 EXPORT_SYMBOL(dprx_if_fifo_release);
 
+int dprx_get_vbid(void) 
+{
+	return MTK_DPRX_REG_READ_MASK(ADDR_VB_ID_INFO, VB_ID_FINAL_FLDMASK);
+}
+EXPORT_SYMBOL(dprx_get_vbid);

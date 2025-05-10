@@ -74,6 +74,19 @@ static long mtk_wrapper_ts_get_current_time(void *user)
 	return 0;
 }
 
+long mtk_wrapper_api_ts_get_current_time(__u32* vts, __u64* stc, __u32* dp_counter)
+{
+	int ret;
+	ret = mtk_ts_get_current_time(s_ts, vts, stc, dp_counter);
+	if (ret != 0) {
+		pr_err("Can't get ts info\n");
+		return -EFAULT;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(mtk_wrapper_api_ts_get_current_time);
+
 static long mtk_wrapper_ts_get_av_time(unsigned int cmd, void *user)
 {
 	int ret;
