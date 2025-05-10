@@ -255,6 +255,9 @@ static int dprx_get_video_info(void *arg)
 	vinfo.bpc    = info.vid_color_depth;
 
 	vinfo.frame_rate = info.frame_rate;
+	vinfo.link_speed = info.link_speed;
+	vinfo.mvid = info.mvid;
+	vinfo.nvid = info.nvid;
 
 	vinfo.dsc_enable = (dprx_get_dsc_mode_status() == 0) ? false : true;
 

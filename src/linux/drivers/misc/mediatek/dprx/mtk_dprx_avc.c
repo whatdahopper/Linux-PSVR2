@@ -1021,6 +1021,10 @@ fps_retry:
 				(u64) (dp_vid_status.vid_timing_msa.h_total);
 	video_fr = (u64) (video_fr * 1000) / (u64) (nvid);
 
+	dp_vid_status.link_speed = link_speed * LINK_RATE_UNIT;
+	dp_vid_status.mvid = mvid;
+	dp_vid_status.nvid = nvid;
+
 	if ((video_fr >= 11640) && (video_fr <= 12360))
 		frame_rate = 120;
 	else if ((video_fr >= 9850) && (video_fr <= 10150))

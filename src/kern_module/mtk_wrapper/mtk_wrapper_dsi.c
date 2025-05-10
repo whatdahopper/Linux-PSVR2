@@ -283,6 +283,24 @@ static int mtk_wrapper_dsi_wait_frmtrk_lock(void *user)
 	}
 }
 
+static int mtk_wrapper_dsi_get_frmtrk_dist(void *user)
+{
+	u32 dist;
+	int ret;
+
+	ret = mtk_frmtrk_get_trk_dist(s_frmtrk, &dist);
+	if (ret < 0) {
+		dist = 0;
+	}
+
+	ret = copy_to_user(user, &dist, sizeof(dist));
+	if (ret != 0) {
+		return -EFAULT;
+	}
+
+	return ret;
+}
+
 static int mtk_wrapper_dsi_start_output(void *user)
 {
 	struct cmdq_pkt *pkt;
@@ -634,6 +652,9 @@ static long mtk_wrapper_dsi_ioctl(struct file *file, unsigned int cmd, unsigned 
 		break;
 	case DSI_FINIT:
 		ret = mtk_wrapper_dsi_finit();
+		break;
+	case DSI_GET_FRMTRK_DIST:
+		ret = mtk_wrapper_dsi_get_frmtrk_dist((void*)arg);
 		break;
 	default:
 		pr_err("dsi_ioctl: unknown command(%d)\n", cmd);

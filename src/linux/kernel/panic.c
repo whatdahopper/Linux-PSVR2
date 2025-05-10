@@ -114,6 +114,8 @@ void panic(const char *fmt, ...)
 	vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
 	pr_emerg("Kernel panic - not syncing: %s\n", buf);
+	pr_emerg("panic_timeout:%d\n", panic_timeout);
+
 #ifdef CONFIG_DEBUG_BUGVERBOSE
 	/*
 	 * Avoid nested stack-dumping if a panic occurs during oops processing
@@ -198,14 +200,23 @@ void panic(const char *fmt, ...)
 			mdelay(PANIC_TIMER_STEP);
 		}
 	}
+	if (panic_timeout == -2) {
+		/*
+		 * If panic_timeout is -2, power off system soon.
+		 */
+		pr_emerg("machine_power_off\n");
+		machine_power_off();
+	}
 	if (panic_timeout != 0) {
 		/*
 		 * This will not be a clean reboot, with everything
 		 * shutting down.  But if there is a chance of
 		 * rebooting the system it will be rebooted.
 		 */
+		pr_emerg("emergency_restart\n");
 		emergency_restart();
 	}
+
 #ifdef __sparc__
 	{
 		extern int stop_a_enabled;

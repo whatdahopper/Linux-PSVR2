@@ -156,5 +156,6 @@ struct dsi_panel_err {
 #define DSI_FINIT             _IO(DSI_DEVICE_IOC_TYPE, 23)
 #define DSI_LANE_SWAP         _IOW(DSI_DEVICE_IOC_TYPE, 24, __u8)
 #define DSI_INIT_STATE_CHECK  _IOW(DSI_DEVICE_IOC_TYPE, 25, args_dsi_init_state_check)
+#define DSI_GET_FRMTRK_DIST   _IOR(DSI_DEVICE_IOC_TYPE, 26, __u32)
 
 #endif /* _MTK_WRAPPER_DSI_ */

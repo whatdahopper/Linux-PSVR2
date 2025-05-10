@@ -63,6 +63,8 @@ struct icm426 {
 	u32 req_vts;
 	int adjust_isr_phase;
 
+	volatile bool isr_timeout;
+	volatile bool invalid_data;
 	atomic_t isr_imu_cnt;
 	s8 temperature;
 };
@@ -429,13 +431,16 @@ static int icm426_thread(void *arg)
 		if (ret < 0) {
 			continue;
 		} else if (ret == 0) {
-			panic("IMU: Interrupt timeout");
+			pr_err("IMU: Interrupt timeout");
+			icm426->isr_timeout = true;
 		}
 		isr_info.imu_cnt = atomic_read(&icm426->isr_imu_cnt);
 		if (request_data(icm426, fifo_receive_callback, (void *)&isr_info) < 0) {
 			err_cnt++;
 			if (err_cnt > FATAL_ERROR_TIMEOUT) {
-				panic("IMU: Exceed read error count");
+				pr_err("IMU: Exceed read error count");
+				icm426->invalid_data = true;
+				err_cnt = 0;
 			}
 		} else {
 			err_cnt = 0;
@@ -614,6 +619,14 @@ static long icm426_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			if (copy_to_user((void *)arg, &get_write_pos, sizeof(get_write_pos))) {
 				WARN_ON(1);
 				return -EINVAL;
+			}
+			if (s_icm426->isr_timeout) {
+				//isr_timeout = false;
+				return -EBUSY;
+			}
+			if (s_icm426->invalid_data) {
+				//invalid_data = false;
+				return -EIO;
 			}
 		}
 		break;

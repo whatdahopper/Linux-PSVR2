@@ -205,6 +205,12 @@ struct dprx_video_info_s {
 	enum DPRX_VID_COLOR_DEPTH vid_color_depth;
 	/** Video Timing Structure for DP output */
 	struct dprx_video_timing_s vid_timing_dpout;
+	/** DP link speed */
+	u32 link_speed;
+	/** DP mvid */
+	u32 mvid;
+	/** DP nvid */
+	u32 nvid;
 };
 
 /** @ingroup IP_group_dprx_external_struct

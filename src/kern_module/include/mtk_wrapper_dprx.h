@@ -73,6 +73,9 @@ typedef struct _dprx_video_info {
 	unsigned int frame_rate;
 	unsigned int bpc;
 	bool dsc_enable;
+	unsigned int link_speed;
+	unsigned int mvid;
+	unsigned int nvid;
 } dprx_video_info;
 
 #define MTK_WRAPPER_DPRX_PPS_SIZE (128)
