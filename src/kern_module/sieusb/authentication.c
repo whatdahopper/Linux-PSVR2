@@ -463,6 +463,12 @@ static int usb_auth_set_auth1_data(struct usb_request *req, struct usb_auth_inte
 
 	length = req->length;
 	memset(&auth1_data, 0, sizeof(auth1_data));
+
+	if (length > sizeof(auth1_data)) {
+		GADGET_AUTH_LOG(LOG_ERR, "Invalid request. Length error. length=%d\n", length);
+		goto cleanup;
+	}
+
 	memcpy(&auth1_data, req->buf, length);
 	dump_auth1(&auth1_data);
 
@@ -527,6 +533,12 @@ static int usb_auth_set_response_data(struct usb_request *req, struct usb_auth_i
 
 	length = req->length;
 	memset(&auth1_data, 0, sizeof(auth1_data));
+
+	if (length > sizeof(auth1_data)) {
+		GADGET_AUTH_LOG(LOG_ERR, "Invalid request. Length error. length=%d\n", length);
+		goto cleanup;
+	}
+
 	memcpy(&auth1_data, req->buf, length);
 	dump_auth1(&auth1_data);
 
