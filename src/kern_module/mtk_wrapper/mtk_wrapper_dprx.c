@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (C) 2021 Sony Interactive Entertainment Inc.
+ * Copyright (C) 2024 Sony Interactive Entertainment Inc.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -174,8 +174,15 @@ static void dprx_dpcd_setting(void)
 	}
 }
 
-static int dprx_power_on(bool hdcp2)
+static int dprx_power_on(const void *user)
 {
+	int ret;
+	args_dprx_config args;
+	ret = copy_from_user(&args, user, sizeof(args_dprx_config));
+	if (ret != 0) {
+		return -EFAULT;
+	}
+
 	s_dprx_cb_video = DPRX_CBEVENT_NONE;
 	s_dprx_cb_audio = DPRX_CBEVENT_NONE;
 	s_dprx_cb_bw = DPRX_CBEVENT_NONE;
@@ -185,11 +192,17 @@ static int dprx_power_on(bool hdcp2)
 	dprx_set_callback(s_dprx, s_dprx, callback_dprx_event);
 	mtk_dprx_power_on_phy(s_dprx);
 	mtk_dprx_power_on(s_dprx);
-	mtk_dprx_drv_init(s_dprx, hdcp2);
+	mtk_dprx_drv_init(s_dprx, args.hdcp2);
 	dprx_set_hdcp1x_capability(false);
 	dprx_set_lane_count(2);
 	dprx_dpcd_setting();
-	dprx_drv_edid_init(s_edid_sie_vrh, sizeof(s_edid_sie_vrh));
+
+	if (args.edid_type == DPRX_EDID_MAX_90) {
+		dprx_drv_edid_init(s_edid_sie_vrh_90, sizeof(s_edid_sie_vrh_90));
+	} else {
+		dprx_drv_edid_init(s_edid_sie_vrh_120, sizeof(s_edid_sie_vrh_120));
+	}
+
 	mtk_dprx_phy_gce_init(s_dprx);
 	mtk_dprx_drv_start();
 

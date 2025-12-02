@@ -123,6 +123,10 @@ static int mtk_wrapper_dscenc_set_config(void *user)
 		return -EINVAL;
 	}
 
+	if (cfg.slice_h == 0) {
+		return -EINVAL;
+	}
+
 	if (!args.config.pps) {
 		ret = dsc_hw_init(s_dscenc, cfg, NULL, NULL);
 	} else {

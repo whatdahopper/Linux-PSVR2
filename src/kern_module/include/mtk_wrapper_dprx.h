@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (C) 2021 Sony Interactive Entertainment Inc.
+ * Copyright (C) 2024 Sony Interactive Entertainment Inc.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -57,6 +57,16 @@ typedef enum {
 	DPRX_VIDEO_FORMAT_YUV444,
 	DPRX_VIDEO_FORMAT_YUV422
 } DPRX_VIDEO_FORAMT;
+
+typedef enum {
+	DPRX_EDID_MAX_120,
+	DPRX_EDID_MAX_90,
+} DPRX_EDID_TYPE;
+
+typedef struct _dprx_config {
+	bool hdcp2;
+	DPRX_EDID_TYPE edid_type;
+} args_dprx_config;
 
 typedef struct _dprx_video_info {
 	unsigned int h_active;
@@ -168,7 +178,7 @@ typedef struct _dprx_spd_info {
 	__u8 buf[SPD_HB_LEN + SPD_INFOFRAME_LEN];
 } dprx_spd_info;
 
-#define DPRX_POWER_ON  _IOR(DPRX_DEVICE_IOC_TYPE, 1, bool)
+#define DPRX_POWER_ON  _IOR(DPRX_DEVICE_IOC_TYPE, 1, args_dprx_config)
 #define DPRX_POWER_OFF _IO(DPRX_DEVICE_IOC_TYPE, 2)
 #define DPRX_GET_VIDEO_INFO _IOR(DPRX_DEVICE_IOC_TYPE, 3, dprx_video_info)
 #define DPRX_GET_PPS _IOR(DPRX_DEVICE_IOC_TYPE, 4, args_dprx_pps)

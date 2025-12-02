@@ -7,10 +7,6 @@
 
 #include <linux/debugfs.h>
 #include <linux/of_platform.h>
-#include <linux/ioport.h>
-#include <linux/fs.h>
-#include <linux/slab.h>
-#include <linux/uaccess.h>
 #include <asm-generic/io.h>
 
 #include "../drivers/misc/mediatek/slicer/mtk_slicer_reg.h"

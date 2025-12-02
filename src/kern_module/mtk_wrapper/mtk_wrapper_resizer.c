@@ -98,6 +98,10 @@ static int mtk_wrapper_resizer_set_config(void *user)
 	config.out_width = args.out_width;
 	config.out_height = args.out_height;
 
+	if (config.out_height == 0) {
+		return -EINVAL;
+	}
+
 	for (i = 0; i < s_resizer_active; i++) {
 		ret |= mtk_resizer_config(s_resizer_dev[i], NULL, &config);
 	}

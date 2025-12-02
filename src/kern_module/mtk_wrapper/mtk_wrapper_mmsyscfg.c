@@ -293,6 +293,9 @@ static int mtk_wrapper_mmsyscfg_camera_sync_frc(void *user)
 	}
 	id = args.camera_id;
 	cd = gcd(args.panel_fps, args.camera_fps);
+	if (cd <= 0) {
+		return -EINVAL;
+	}
 	n = args.camera_fps / cd;
 	m = args.panel_fps / cd;
 	pr_debug("cameraFPS(%d), panelFPS(%d), cd(%d), n(%d), m(%d)\n",

@@ -4,7 +4,7 @@
  *
  * Copyright (c) 2017 MediaTek Inc.
  *
- * Copyright (C) 2021 Sony Interactive Entertainment Inc.
+ * Copyright (C) 2024 Sony Interactive Entertainment Inc.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -2391,11 +2391,17 @@ int mt_afe_playback_write(struct device *dev, void *buf, unsigned int size)
 	unsigned int remain_size;
 	u32 period_size;
 	u32 channels;
-	u32 bytes_per_sample;
+	u32 bytes_per_sample = 0;
 
 	period_size = dai_runtime[MT_AFE_MEMIF_DL12].period_size;
 	channels = dai_runtime[MT_AFE_MEMIF_DL12].channels;
-	bytes_per_sample = snd_pcm_format_width(dai_runtime[MT_AFE_MEMIF_DL12].format) / 8;
+	{
+		int width;
+		width = snd_pcm_format_width(dai_runtime[MT_AFE_MEMIF_DL12].format);
+		if (width >= 0) {
+			bytes_per_sample = width / 8;
+		}
+	}
 	remain_size = memif->data->max_sram_size - current_pos;
 	dev_dbg(afe->dev, "%s\n", __func__);
 
